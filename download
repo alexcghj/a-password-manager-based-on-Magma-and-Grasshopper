@@ -1,0 +1,15 @@
+# build artifacts
+passman
+selftest
+vaulttest
+*.o
+# runtime data (contains hashes / encrypted secrets)
+users.txt
+vault.txt
+# old artifacts to remove from the repo
+Pass
+Pass2
+stribog
+stribog_const
+secret.txt
+logandpass.txt

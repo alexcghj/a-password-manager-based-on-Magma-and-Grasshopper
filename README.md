@@ -1,22 +1,45 @@
-Кулешов Александр Русланович, Сиотанов Алексей Максимович. Менеджер паролей
+# GOST Password Manager (Magma + Streebog)
 
-Для сборки проекта необходимо:
+A terminal password manager in C built on **from-scratch implementations of the Russian GOST cryptographic standards**. Account passwords are hashed with **Streebog** (GOST R 34.11-2012); stored credentials are encrypted with the **Magma** block cipher (GOST R 34.12-2015). The Magma implementation is verified against the official test vector from the standard.
 
-Необходимые компоненты: • MinGW: MinGW - это компилятор C/C++ для Windows. Скачайте его с сайта https://www.mingw-w64.org/. Убедиться в том, что установлена библиотека ncurses: Это библиотека для создания текстовых интерфейсов. Скачайте ее с сайта https://www.gnu.org/software/ncurses/.
-Сборка программы:
-• Распакуйте MinGW: Распакуйте скачанный архив MinGW в папку по вашему выбору. • Добавьте MinGW в PATH: Чтобы компилятор MinGW был доступен в командной строке, добавьте путь к папке bin в MinGW в переменную PATH.
+> University information-security project by **Alexander Kuleshov** and **Alexey Siotanov**.
 
-Откройте "Панель управления" -> "Система" -> "Дополнительные параметры системы" -> "Дополнительно" -> "Переменные среды".
+## What works
+- Registration and login — account passwords are stored only as Streebog-512 hashes
+- Per-user encrypted vault — each stored password is encrypted with Magma and shown decrypted only after login
+- Clean `ncurses` terminal UI — masked password input, arrow-key menus
+- Test suite — Magma checked against the GOST test vector, plus end-to-end vault round-trips
 
-В "Системные переменные" найдите переменную PATH.
+## Project layout
+```
+magma.c / magma.h                Magma block cipher (GOST R 34.12-2015), verified
+crypto_store.c / .h              key derivation, password encrypt/decrypt, auth hashing
+vault.c / vault.h                accounts + encrypted entries (file-backed)
+Pass.c                           ncurses user interface
+stribog.c / .h, stribog_const.h  Streebog hash (GOST R 34.11-2012) — your existing files
+selftest.c                       Magma test vector + storage round-trips
+vault_test.c                     register / login / add / view logic tests
+Makefile
+```
 
-Добавьте путь к папке bin MinGW через точку с запятой (;), например, C:\MinGW\bin;. • Компиляция программы: Откройте командную строку и перейдите в папку, где находятся ваши файлы программы (.c и stribog.c).
+## Build & run
+Requires a C compiler and ncurses (`sudo apt install libncurses-dev` on Debian/Ubuntu;
+MinGW-w64 + ncurses on Windows).
+```bash
+make          # builds ./passman
+./passman
+make test     # builds and runs both test suites
+```
 
-Запустите команду:
+## How encryption works
+On login the master password is hashed with Streebog and the digest becomes the 256-bit Magma key, kept only in memory. Each stored password is padded to Magma's 8-byte block, encrypted, and saved as hex in `vault.txt`; viewing reverses this. Because the key comes from the master password, entries can only be read by the account that created them.
 
-gcc -o Pass Pass.c -lncurses -I"C:\MinGW\include"
+## Security scope
+This is an educational project and is **not intended for storing real passwords**. Current simplifications: ECB mode (no chaining/IV), no per-user salt, no dedicated key-stretching KDF, and no secure wiping of secrets in memory. A production version would use CBC/CTR, a random salt, and a proper KDF.
 
-Замените C:\MinGW\include на путь к папке include MinGW, если она у вас расположена по другому адресу.
+## Roadmap
+- Add **Kuznyechik** (GOST R 34.12-2015, 128-bit block) as a second cipher, verified the same way
+- CBC/CTR mode, random salt, KDF; edit/delete entries
 
-Запуск программы:
-• Запустите программу: Перейдите в командной строке в папку, где вы скомпилировали программу. • Выполните команду: Pass
+## Credits
+Developed by **Alexander Kuleshov** and **Alexey Siotanov**.
